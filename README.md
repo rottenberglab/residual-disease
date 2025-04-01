@@ -23,7 +23,7 @@ a comprehensive molecular roadmap of MRD, opening new avenues for therapeutic st
 tolerance and tumour relapse.
 
 <p align="center">
-   <img src="misc/study_info.png" width="1000">
+   <img src="misc/study_info.png">
 </p>
 
 ## Structure
