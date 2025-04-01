@@ -58,29 +58,6 @@ filtered_signature_df = signature_df.loc[list(common_genes)]
 filtered_human_signature_df = human_signature_df.loc[list(common_genes)]
 
 #%%
-# pearsons r
-corr_matrix = np.empty((len(filtered_signature_df.columns), len(filtered_human_signature_df.columns)))
-for i, col1 in enumerate(filtered_signature_df.columns):
-    for j, col2 in enumerate(filtered_human_signature_df.columns):
-        corr, _ = pearsonr(filtered_signature_df[col1], filtered_human_signature_df[col2])
-        corr_matrix[i, j] = corr
-
-corrs = pd.DataFrame(data=corr_matrix,
-                     # index=[cell_type_dict[x] for x in celltypes_df.columns],
-                     index=filtered_signature_df.columns,
-                     columns=filtered_human_signature_df.columns).T
-sf = 0.65
-plt.rcParams['svg.fonttype'] = 'none'
-matrixplot(corrs.T, figsize=(18.2 * sf, 12 * sf), flip=False, scaling=False, square=True,
-           colorbar_shrink=0.20, colorbar_aspect=10, title='Asd',
-           dendrogram_ratio=0.1, cbar_label="Score", xlabel='Pathways', comps=None,
-           cmap=sns.diverging_palette(267, 20, l=55, center="dark", as_cmap=True),
-           ylabel='Compartments', rasterized=True, seed=87, reorder_obs=True, reorder_comps=True,
-           color_comps=False, adata=adata, xrot=90, ha='center', linewidth=0.0, fill_diags=False)
-# plt.savefig(f'figs/manuscript/fig3/cell_co_corr_{idx}.svg')
-plt.show()
-
-#%%
 # cosine similarity
 corr_matrix = np.empty((len(filtered_signature_df.columns), len(filtered_human_signature_df.columns)))
 for i, col1 in enumerate(filtered_signature_df.columns):

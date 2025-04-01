@@ -80,6 +80,7 @@ Contains scripts for spatial transcriptomics data analysis.
 - `05_cell_type_deconv_plots.py`: Visualizes cell type deconvolution results.
 - `06_cnv_inference.py`: Infers copy number variations.
 - `07_compartment_morphology.py`: Visualizes spatial morphology of tissue compartments.
+- `08_cell_type_cooccurrence.py` : Cell type co-occurrence across tumor stages.
 - `deconvolution_notebooks/`: Jupyter notebooks for cell type deconvolution.
 - `dgea/`: Differential gene expression analysis scripts.
 - `functional_analysis/`: Pathway enrichment and functional analysis scripts.
