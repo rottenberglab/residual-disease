@@ -8,6 +8,7 @@ from lifelines import KaplanMeierFitter
 from sklearn.mixture import GaussianMixture
 from lifelines.statistics import logrank_test
 from lifelines.plotting import add_at_risk_counts
+from matplotlib.ticker import MaxNLocator
 
 
 #%%
@@ -16,7 +17,6 @@ data = pd.read_csv("data/SCAN-B/GSE96058_gene_expression_3273_samples_and_136_re
 
 metadata1 = pd.read_csv('data/SCAN-B/GSE96058-GPL11154_series_matrix.txt', sep="\t", skiprows=63, index_col=0)
 metadata2 = pd.read_csv('data/SCAN-B/GSE96058-GPL18573_series_matrix.txt', sep="\t", skiprows=63, index_col=0)
-
 
 def clean_metadata(metadata2):
     term = '!Sample_characteristics_ch1'
@@ -30,7 +30,6 @@ def clean_metadata(metadata2):
         new_vals = [x.split(': ')[-1] for x in col.values]
         df[c] = new_vals
     return df
-
 
 metadata1 = clean_metadata(metadata1)
 metadata2 = clean_metadata(metadata2)
@@ -159,10 +158,19 @@ tnbc_df['TNBC_combined'] =  [0 if x == False else 1 for x in tnbc_df[['TNBC', 'T
 adata.obs['TNBC_combined'] = tnbc_df['TNBC_combined']
 
 #%%
+
 # K-means-based approach
+from sklearn.cluster import KMeans
+
 tnbc_adata = adata[adata.obs['TNBC_combined'] == 1]  # subset to TNBC
 # tnbc_adata = tnbc_adata[tnbc_adata.obs['endocrine treated'] == '0']
 tnbc_adata = tnbc_adata[tnbc_adata.obs['chemo treated'] == '1']
+
+median = np.median(tnbc_adata.obs['EMT_signature'])
+tnbc_adata.obs['EMT_high'] = tnbc_adata.obs.apply(
+    lambda row: True if row['EMT_signature'] > np.median(tnbc_adata.obs['EMT_signature']) else False, axis=1)
+tnbc_adata.obs['EMT_low'] = tnbc_adata.obs.apply(
+    lambda row: True if row['EMT_signature'] <= np.median(tnbc_adata.obs['EMT_signature']) else False, axis=1)
 
 plt.scatter(tnbc_adata.obs[f'EMT_signature'], tnbc_adata.obs[f'Proliferating_signature'], marker='x', s=7)
 plt.show()
@@ -191,13 +199,12 @@ kmf.fit(obs_df['survival_time'], event_observed=obs_df['censor_status'])
 # plot stuff
 signature_name = 'EMT'
 plt.rcParams['svg.fonttype'] = 'none'
-
 fig, ax = plt.subplots(1, 1, figsize=(4, 5))
 
 high_df = obs_df[obs_df[f'{signature_name}_high'] == True]
 kmf_high = KaplanMeierFitter(label=f'{signature_name} high')
 kmf_high.fit(high_df['survival_time'], event_observed=high_df['censor_status'])
-kmf_high.plot_survival_function(ax=ax, color='#fa3')
+kmf_high.plot_survival_function(ax=ax, color='#CAA167')
 
 low_df = obs_df[obs_df[f'{signature_name}_low'] == True]
 kmf_low = KaplanMeierFitter(label=f'{signature_name} low')
@@ -206,16 +213,27 @@ kmf_low.plot_survival_function(ax=ax, color='#999')
 
 ax.grid(axis='both', linestyle='-', linewidth='0.5', color='grey')
 ax.set_axisbelow(True)
-ax.set_title(f'SCAN-B\n{signature_name} signature')
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
+ax.set_title(f'SCAN-B\nOverall survival')
+#ax.spines['top'].set_visible(False)
+#ax.spines['right'].set_visible(False)
 ax.set_xlabel('Timeline (year)')
+
+ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
 
 add_at_risk_counts(kmf_high, kmf_low, ax=ax)
 ax.set_ylabel('Survival probability')
 plt.tight_layout()
-plt.savefig(f'figs/manuscript/fig4/scan-b-emt.svg')
+plt.savefig(f'figures/scanb.svg')
 plt.show()
+
+df_high = pd.concat([kmf_high.survival_function_, kmf_high.confidence_interval_], axis=1)
+df_high.columns = ['emt-high_survival_probability', 'emt-high_CI_lower', 'emt-high_CI_upper']
+df_low = pd.concat([kmf_low.survival_function_, kmf_low.confidence_interval_], axis=1)
+df_low.columns = ['emt-low_survival_probability', 'emt-low_CI_lower', 'emt-low_CI_upper']
+source_data = pd.concat([df_high, df_low], axis=1)
+source_data = source_data.sort_index()
+source_data = source_data.ffill()
+source_data.to_csv('data/fig5i.csv')
 
 results = logrank_test(high_df['survival_time'], low_df['survival_time'],
                        high_df['censor_status'], low_df['censor_status'])

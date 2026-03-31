@@ -18,7 +18,7 @@ adatas = [sc.read_h5ad(x) for x in h5ads]
 sample_names = [x.obs['sample_id'][0] for x in adatas]
 adata = ch.integrate_adatas(adatas, sample_names=sample_names, sample_col='ch_sample_id')
 
-meta_df = pd.read_csv('data/meta_df_human_filled.csv', index_col=0)
+meta_df = pd.read_csv(f'{output_folder}/meta_df_human_filled.csv', index_col=0)
 scr_adata = sc.read_h5ad(f'{output_folder}/human_samples_scanorama.h5ad')
 sample_names = adata.obs['ch_sample_id'].cat.categories
 
@@ -87,3 +87,5 @@ matrixplot(corrs.T, figsize=(8 * sf, 12 * sf), flip=False, scaling=False, square
            color_comps=True, adata=adata, xrot=0, ha='center', linewidth=0.0, fill_diags=False)
 plt.savefig(f'figs/manuscript/fig4/mouse_human_cosine.svg')
 plt.show()
+
+corrs.to_csv('data/fig5f.csv')

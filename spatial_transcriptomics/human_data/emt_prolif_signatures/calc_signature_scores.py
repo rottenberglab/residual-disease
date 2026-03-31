@@ -6,6 +6,7 @@ import chrysalis as ch
 import matplotlib.pyplot as plt
 from spatial_transcriptomics.functions import spatial_plot
 from spatial_transcriptomics.chrysalis_functions_update import plot_weights
+import pingouin as pg
 
 
 def def_thershold(vector):
@@ -32,7 +33,7 @@ output_folder = 'data/human_samples'
 adata = sc.read_h5ad(f'data/chrysalis/tumor_harmony.h5ad')
 chr_signatues = ch.get_compartment_df(adata)
 
-adata = sc.read_h5ad(f'data/human_samples/human_samples_scanorama.h5ad')
+adata = sc.read_h5ad(f'data/human_samples_scanorama.h5ad')
 orthologs_dict = {k: v for v, k in zip(orthologs_df['Gene name'], orthologs_df['Mouse gene name'])}
 
 mouse_orths = []
@@ -153,6 +154,21 @@ legend.set_title('')
 plt.tight_layout()
 # plt.savefig(f'figs/manuscript/fig4/tissue_comp_score_barplot_v2.svg')
 plt.show()
+
+long_df.to_csv('data/fig5h.csv')
+
+# anova
+stats_df = long_df.copy()
+stats_df['c'] = stats_df['condition'].astype(str) + ' ' + stats_df['variable'].astype(str)
+
+anova_results = pg.anova(data=stats_df, dv='value', between='c', detailed=True)
+print(f"\n--- One-way ANOVA for {c} ---")
+print(anova_results)
+tukey_results = pg.pairwise_tukey(data=stats_df, dv='value', between='c')
+print(f"\n--- Tukey's HSD for {c} ---")
+print(tukey_results)
+
+#%%
 
 residual_df = long_df[long_df['condition'] == 'primary_tumor']
 residual_df = residual_df[residual_df['variable'] == 'EMT_signature']

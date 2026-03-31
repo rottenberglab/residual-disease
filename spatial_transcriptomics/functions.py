@@ -367,7 +367,7 @@ def spatial_plot(adata, rows, cols, var, title=None, sample_col='sample_id', cma
                  alpha_img=1.0, share_range=True, suptitle=None, wspace=0.5, hspace=0.5, colorbar_label=None,
                  colorbar_aspect=20, colorbar_shrink=0.7, colorbar_outline=True, alpha_blend=False, k=15, x0=0.5,
                  suptitle_fontsize=20, suptitle_y=0.99, topspace=None, bottomspace=None, leftspace=None,
-                 rightspace=None, facecolor='white', wscale=1,
+                 rightspace=None, facecolor='white', wscale=1, figsize=None,
                  **kwargs):
     from pandas.api.types import is_categorical_dtype
 
@@ -389,7 +389,10 @@ def spatial_plot(adata, rows, cols, var, title=None, sample_col='sample_id', cma
                     vmin = np.min(adata.obs[var])
                     vmax = np.max(adata.obs[var])
 
-    fig, ax = plt.subplots(rows, cols, figsize=(cols * subplot_size * wscale, rows * subplot_size))
+    if figsize is None:
+        figsize = (cols * subplot_size * wscale, rows * subplot_size)
+
+    fig, ax = plt.subplots(rows, cols, figsize=figsize)
     ax = np.array([ax])
 
     if isinstance(ax, np.ndarray):
@@ -451,6 +454,8 @@ def spatial_plot(adata, rows, cols, var, title=None, sample_col='sample_id', cma
 
         if title is not None:
             ax[idx].set_title(title[idx])
+        else:
+            ax[idx].set_title(None)
 
     # Adjust colorbars only if ranges are shared
     if share_range:
@@ -462,7 +467,7 @@ def spatial_plot(adata, rows, cols, var, title=None, sample_col='sample_id', cma
             sc_img = ax[last_in_row_idx].collections[0]
 
             colorbar = fig.colorbar(sc_img, ax=ax[last_in_row_idx], shrink=colorbar_shrink, aspect=colorbar_aspect,
-                                    format="%.3f")
+                                    format="%.2f")
             colorbar.outline.set_visible(colorbar_outline)
             colorbar.set_label(colorbar_label)
     else:
@@ -472,7 +477,7 @@ def spatial_plot(adata, rows, cols, var, title=None, sample_col='sample_id', cma
             sc_img = ax[r].collections[0]
 
             colorbar = fig.colorbar(sc_img, ax=ax[r], shrink=colorbar_shrink, aspect=colorbar_aspect,
-                                    format="%.1f")
+                                    format="%.2f")
             colorbar.outline.set_visible(colorbar_outline)
             colorbar.set_label(colorbar_label)
 
@@ -483,7 +488,6 @@ def spatial_plot(adata, rows, cols, var, title=None, sample_col='sample_id', cma
     if suptitle:
         plt.suptitle(suptitle, fontsize=suptitle_fontsize, y=suptitle_y)
     # plt.tight_layout()
-
 
 
 def preprocess_visium(meta_df):
@@ -874,9 +878,9 @@ def chromosome_heatmap(
 
 def matrixplot(df, figsize = (7, 5), num_genes=5, hexcodes=None, adata=None,
                 seed: int = None, scaling=True, reorder_comps=True, reorder_obs=True, comps=None, flip=True,
-                colorbar_shrink: float = 0.5, colorbar_aspect: int = 20, cbar_label: str = None,
+                colorbar_shrink: float = 0.5, colorbar_aspect: int = 20, cbar_label: str = None, spines=False,
                 dendrogram_ratio=0.05, xlabel=None, ylabel=None, fontsize=10, title=None, cmap=None,
-                color_comps=True, xrot=0, ha='right', select_top=False, fill_diags=False, dendro_treshold=None,
+                color_comps=False, xrot=0, ha='right', select_top=False, fill_diags=False, dendro_treshold=None,
                 **kwrgs):
     # SVG weights for each compartment
 
@@ -884,7 +888,8 @@ def matrixplot(df, figsize = (7, 5), num_genes=5, hexcodes=None, adata=None,
     from scipy.cluster.hierarchy import dendrogram
 
     dim = df.shape[0]
-    hexcodes = ch.utils.get_hexcodes(hexcodes, dim, seed, len(adata))
+    if adata is not None:
+        hexcodes = ch.utils.get_hexcodes(hexcodes, dim, seed, len(adata))
 
     if cmap is None:
         cmap = sns.diverging_palette(45, 340, l=55, center="dark", as_cmap=True)
@@ -905,7 +910,8 @@ def matrixplot(df, figsize = (7, 5), num_genes=5, hexcodes=None, adata=None,
         z = linkage(df, method='ward')
         order = leaves_list(z)
         df = df.iloc[order, :]
-        hexcodes = [hexcodes[i] for i in order]
+        if adata is not None:
+            hexcodes = [hexcodes[i] for i in order]
     if select_top:
         # get top genes for each comp
         genes_dict = {}
@@ -923,7 +929,7 @@ def matrixplot(df, figsize = (7, 5), num_genes=5, hexcodes=None, adata=None,
     if flip:
         plot_df = plot_df.T
         d_orientation = 'right'
-        d_pad = 0.00
+        d_pad = 0.01
     else:
         d_orientation = 'top'
         d_pad = 0.05
@@ -935,24 +941,37 @@ def matrixplot(df, figsize = (7, 5), num_genes=5, hexcodes=None, adata=None,
 
     # Create the heatmap but disable the default colorbar
     sc_img = sns.heatmap(plot_df.T, ax=ax, cmap=cmap,
-                         center=0, cbar=False, zorder=2, **kwrgs)
+                         cbar=False, zorder=2, **kwrgs)
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=xrot, ha=ha)
+
+    if spines is True:
+        ax.spines['top'].set_visible(True)
+        ax.spines['left'].set_visible(True)
+        ax.spines['right'].set_visible(True)
+        ax.spines['bottom'].set_visible(True)
+
     # Create a divider for axes to control the placement of dendrogram and colorbar
     divider = make_axes_locatable(ax)
 
     # Dendrogram axis - append to the left of the heatmap
     ax_dendro = divider.append_axes(d_orientation, size=f"{dendrogram_ratio * 100}%", pad=d_pad)
+    ax_dendro.set_visible(False)
+    ax_dendro.set_facecolor("none")
 
     # Plot the dendrogram on the left
-    dendro = dendrogram(z, orientation=d_orientation, ax=ax_dendro, no_labels=True, color_threshold=0,
-                        above_threshold_color='black')
+    if reorder_comps or reorder_obs is True:
+        ax_dendro.set_visible(True)
+        dendro = dendrogram(z, orientation=d_orientation, ax=ax_dendro, no_labels=True, color_threshold=0,
+                            above_threshold_color='black')
+
     if flip:
         ax_dendro.invert_yaxis()  # Invert to match the heatmap
 
     # Remove ticks and spines from the dendrogram axis
     ax_dendro.set_xticks([])
     ax_dendro.set_yticks([])
+
     ax_dendro.spines['top'].set_visible(False)
     ax_dendro.spines['right'].set_visible(False)
     ax_dendro.spines['left'].set_visible(False)
@@ -1041,7 +1060,7 @@ def chromosome_heatmap_summary(
     tmp_obs.index = tmp_obs.index.astype(str)
 
     def _get_group_mean(group):
-        group_mean = np.mean(adata.obsm[f"X_{use_rep}"][adata.obs[groupby] == group, :], axis=0)
+        group_mean = np.mean(adata.obsm[f"X_{use_rep}"][adata.obs[groupby].values == group, :], axis=0)
         if len(group_mean.shape) == 1:
             # derived from an array instead of sparse matrix -> 1 dim instead of 2
             group_mean = group_mean[np.newaxis, :]
@@ -1085,6 +1104,8 @@ def chromosome_heatmap_summary(
     )
 
     return_ax_dic["heatmap_ax"].vlines(chr_pos[1:], lw=0.6, ymin=-1, ymax=tmp_adata.shape[0], colors='white')
+
+    return_ax_dic['groupby_ax'].set_ylabel('')
 
     for artist in return_ax_dic["heatmap_ax"].get_children():
         if isinstance(artist, matplotlib.collections.LineCollection):

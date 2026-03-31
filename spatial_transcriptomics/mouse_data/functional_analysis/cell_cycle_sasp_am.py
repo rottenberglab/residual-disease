@@ -149,6 +149,7 @@ z = linkage(pathways_df.T, method='ward')
 order = leaves_list(z)
 pathways_df = pathways_df.iloc[:, order]
 pathways_df = pathways_df.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+pathways_df.to_csv('data/fig3a_sasp.csv')
 
 plt.rcParams['svg.fonttype'] = 'none'
 sf = 0.32
@@ -182,6 +183,9 @@ matrixplot(corr_m, figsize=(8.2*sf, 12*sf), flip=True, scaling=False, square=Tru
             color_comps=True, adata=adata, xrot=90, ha='center')
 # plt.savefig(f'figs/manuscript/fig3/cc_sasp_am_corr.svg')
 plt.show()
+
+corr_m.to_csv('data/fig3b_sasp.csv')
+
 
 #%%
 # Spatial plots (Fig.3c)

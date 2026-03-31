@@ -14,7 +14,7 @@ compartment_df = pd.DataFrame(data=compartments, index=adata.obs.index)
 
 #%%
 # PROGENY
-enrich_df = pd.read_csv('pathway_activity_scores.csv', index_col=0)
+enrich_df = pd.read_csv('data/pathway_activity_scores.csv', index_col=0)
 
 corr_m = pd.concat([compartment_df, enrich_df], axis=1).corr()
 corr_m = corr_m.drop(index=enrich_df.columns, columns=compartment_df.columns)
@@ -22,6 +22,8 @@ corr_m = corr_m.drop(index=enrich_df.columns, columns=compartment_df.columns)
 corr_m.index = [x for x in range(13)]
 
 hexcodes = ch.utils.get_hexcodes(None, 13, 87, len(adata))
+
+corr_m.to_csv('data/fig3b_progeny.csv')
 
 selected_comps = [0, 1, 2, 4, 5, 7, 8, 9, 10, 11, 12]
 plt.rcParams['svg.fonttype'] = 'none'
@@ -37,21 +39,23 @@ plt.show()
 
 #%%
 # MSIGDB HALLMARKS
-enrich_df = pd.read_csv('hallmarks_scores.csv', index_col=0)
+enrich_df = pd.read_csv('data/hallmarks_scores.csv', index_col=0)
 
 hexcodes = ch.utils.get_hexcodes(None, 13, 87, len(adata))
 
-pvals_df = pd.read_csv('hallmarks_pvals.csv', index_col=0)
+pvals_df = pd.read_csv('data/hallmarks_pvals.csv', index_col=0)
 signif_df = 0.05 > pvals_df
 signif_df = signif_df.sum(axis=0)
 signif_df = pd.DataFrame(data=signif_df, columns=['num_significant'])
-signif_sets = signif_df[signif_df['num_significant'] > 10000].index.tolist()
+signif_sets = signif_df[signif_df['num_significant'] > 40000].index.tolist()
 enrich_df = enrich_df[signif_sets]
 enrich_df.columns = [' '.join(x.split('_')) for x in enrich_df.columns]
 
 corr_m = pd.concat([compartment_df, enrich_df], axis=1).corr()
 corr_m = corr_m.drop(index=enrich_df.columns, columns=compartment_df.columns)
 corr_m.index = ['' + str(x) for x in range(13)]
+
+corr_m.to_csv('data/fig3b_hallmark.csv')
 
 z = linkage(corr_m, method='ward')
 order = leaves_list(z)

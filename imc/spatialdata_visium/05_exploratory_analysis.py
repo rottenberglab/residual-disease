@@ -98,6 +98,8 @@ cell_type_dict = {
 adata.obs['treatment_time'] = [title_dict[f'{x}_{y}'] for x, y
                                in zip(list(adata.obs['treatment']), list(adata.obs['elapsed_time']))]
 
+adata = adata[adata.obs['mean_pt'].dropna().index].copy()
+
 sample_dict = {}
 for c in np.unique(adata.obs['treatment_time']):
     ad = adata[adata.obs['treatment_time'] == c]
@@ -125,6 +127,8 @@ ax.set_ylabel(None)
 plt.tight_layout()
 # plt.savefig(f'/mnt/c/Users/demeter_turos/PycharmProjects/persistance/figs/manuscript/fig5/cell_types_plat_hm.svg')
 plt.show()
+
+corrs_df.T.to_csv('data/fig4h.csv')
 
 corrs_df = corrs_df.T
 corrs_df = corrs_df[['Cisplatin 6mg/kg 4hpt', 'Cisplatin 6mg/kg 24hpt', 'Cisplatin 6mg/kg 12dpt', 'Primary tumor']]
@@ -351,7 +355,7 @@ plt.show()
 
 #%%
 # compartment correlations with pt
-adata = sc.read_h5ad(f'{output_folder}/imc_samples_scanorama_4.h5ad')
+adata = sc.read_h5ad(f'data/imc_samples_scanorama.h5ad')
 
 # cell type correlations with the compartments
 compartments = adata.obsm['chr_aa']

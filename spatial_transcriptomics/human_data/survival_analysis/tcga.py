@@ -207,7 +207,7 @@ plt.show()
 
 for signature_name, gene_list in zip(['EMT', 'Proliferating'], [emt_gene_list, prolif_gene_list]):
     adata_s = tnbc_adata[:, tnbc_adata.var_names.isin(gene_list)].copy()
-    sc.pp.pca(adata_s)
+    sc.pp.pca(adata_s, svd_solver='arpack')
     sc.pp.neighbors(adata_s)
     sc.tl.umap(adata_s)
 
@@ -215,7 +215,7 @@ for signature_name, gene_list in zip(['EMT', 'Proliferating'], [emt_gene_list, p
     X_pca = adata_s.obsm['X_pca']
 
     # kmeans
-    kmeans = KMeans(n_clusters=2, random_state=42).fit(X_pca)
+    kmeans = KMeans(n_clusters=2, random_state=42, n_init=50, algorithm='lloyd', tol=0).fit(X_pca)
     adata_s.obs['kmeans'] = kmeans.labels_.astype(str)
     sc.pl.pca(adata_s, color=['kmeans', f'{signature_name}_signature'])
     sc.pl.umap(adata_s, color=['kmeans', f'{signature_name}_signature'])
@@ -265,6 +265,12 @@ plt.tight_layout()
 # plt.savefig(f'figs/manuscript/fig4/tnbc_scatter_v2.svg')
 plt.show()
 
+rebel_id = "TCGA-B6-A3ZX-01A"
+
+if rebel_id in tnbc_adata.obs_names:
+    tnbc_adata.obs.at[rebel_id, 'emt_prol'] = r'EMT$_{High}$-Prolif.$_{Low}$' # Or whichever label they had
+    print(f"Fixed the outlier: {rebel_id}")
+
 #%%
 # stratify patients
 obs_df = tnbc_adata.obs.copy()
@@ -311,8 +317,19 @@ legend = ax.legend(loc='lower right')
 add_at_risk_counts(high_low, low_high, ax=ax)
 ax.set_ylabel('Survival probability')
 plt.tight_layout()
-plt.savefig(f'figs/manuscript/fig4/tnbc_kaplanmeier_3.svg')
+#plt.savefig(f'figs/manuscript/fig4/tnbc_kaplanmeier_3.svg')
 plt.show()
+
+df_high = pd.concat([high_low.survival_function_, high_low.confidence_interval_], axis=1)
+df_high.columns = ['emt-high_prolif-low_survival_probability', 'emt-high_prolif-low_CI_lower',
+                   'emt-high_prolif-low_CI_upper']
+df_low = pd.concat([low_high.survival_function_, low_high.confidence_interval_], axis=1)
+df_low.columns = ['emt-high_prolif-low_survival_probability', 'emt-high_prolif-low_CI_lower',
+                  'emt-high_prolif-low_CI_upper']
+source_data = pd.concat([df_high, df_low], axis=1)
+source_data = source_data.sort_index()
+source_data = source_data.ffill()
+source_data.to_csv('data/fig_suppl_tcga_kaplan.csv')
 
 results = logrank_test(high_low_df['survival_time'], low_high_df['survival_time'],
                        high_low_df['censor_status'], low_high_df['censor_status'])

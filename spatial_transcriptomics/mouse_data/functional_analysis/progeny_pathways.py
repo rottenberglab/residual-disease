@@ -27,7 +27,7 @@ time = {'12_days': '12 days post-treatment', '30_days': '30 days post-treatment'
         '4_hours': '4 hours post-treatment'}
 
 # run progeny on top 500 genes
-meta_df = pd.read_csv('mouse_metadata.csv', index_col=0)
+meta_df = pd.read_csv('data/meta_df_filled.csv', index_col=0)
 
 adata = sc.read_h5ad(f'data/chrysalis/tumor_harmony.h5ad')
 progeny = pd.read_csv(f'data/decoupler/progeny_mouse_500.csv', index_col=0)
@@ -36,6 +36,9 @@ dc.run_mlm(mat=adata, net=progeny, source='source', target='target', weight='wei
 
 #%%
 # pathway activity mean per condition
+
+progeny_df = pd.read_csv('data/pathway_activity_scores.csv', index_col=0)
+adata.obsm['mlm_estimate'] = progeny_df
 
 meta_df_sub = meta_df[meta_df['sample_id'].isin(np.unique(adata.obs['sample_id']))]
 cond = [x + ' ' + y + ' ' + z for x, y, z in zip(meta_df_sub['condition'], meta_df_sub['treatment'],
@@ -64,6 +67,8 @@ pathways_df = pathways_df.iloc[order, :]
 z = linkage(pathways_df.T, method='ward')
 order = leaves_list(z)
 pathways_df = pathways_df.iloc[:, order]
+
+pathways_df.to_csv('data/fig3a_progeny.csv')
 
 plt.rcParams['svg.fonttype'] = 'none'
 sf = 0.6

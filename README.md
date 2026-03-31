@@ -5,22 +5,20 @@ and single-cell RNA sequencing data presented in our research article. To rerun 
 extra steps, such as getting the raw data, adjusting directory paths, and downloading raw and processed supplementary 
 files from the Zenodo archives.
 
-**Authors**: Demeter Túrós, Morgane Decollogny, Astrid Chanfon, Myriam Siffert, Lou Romanens, Jean-Christophe Tille, 
-Intidhar Labidi-Galy, Alberto Valdeolivas, and Sven Rottenberg
+**Authors**: Demeter Túrós, Morgane Decollogny, Anna Moyseos, Astrid Chanfon, Myriam Siffert, Joanne Bousmar, 
+Lou Romanens, Jean-Christophe Tille, Intidhar Labidi-Galy, Alberto Valdeolivas, and Sven Rottenberg
 
-**Abstract**: Breast cancer remains one of the prominent causes of death worldwide. Although chemotherapeutic agents 
-often result in substantial reduction of primary or metastatic tumours, remaining drug-tolerant tumour cell 
-populations, known as minimal residual disease (MRD), pose a significant risk of recurrence and therapy resistance. 
-In this study, we describe the spatiotemporal organisation of therapy response and MRD in BRCA1;p53-deficient mouse 
-mammary tumours and human clinical samples using a multimodal approach. By integrating single-cell RNA sequencing, 
-spatial transcriptomics, and imaging mass cytometry across multiple treatment timepoints, we characterise dynamic 
-interactions between tumour cell subpopulations and their surrounding microenvironment. Our analysis identifies a 
-distinct, drug-tolerant epithelial-mesenchymal transition (EMT) cancer cell population, which exhibits a conserved 
-expression program in human BRCA1-deficient tumours and significantly correlates with adverse clinical outcomes. We 
-further reveal the spatial distribution of residual EMT-like tumour cells within specific anatomical niches, providing 
-a framework for understanding the persistence of MRD and potential therapeutic vulnerabilities. These findings yield 
-a comprehensive molecular roadmap of MRD, opening new avenues for therapeutic strategies targeting EMT-driven drug 
-tolerance and tumour relapse.
+**Abstract**: Breast cancer remains a leading cause of death worldwide. Although chemotherapy  reduces primary and 
+metastatic tumour burden, persisting drug-tolerant tumour cell populations, known as minimal residual disease (MRD), 
+pose a significant risk of recurrence and therapy resistance. In this study, we describe the spatiotemporal organisation
+of therapy response and MRD in BRCA1;p53-deficient mouse mammary tumours and human clinical samples. By integrating 
+single-cell RNA sequencing, spatial transcriptomics, and imaging mass cytometry across multiple treatment timepoints, we
+characterise dynamic interactions between tumour cell subpopulations and their surrounding microenvironment. Our 
+multiomic analysis uncovers a distinct, chemotherapy-tolerant epithelial-mesenchymal transition (EMT) cancer cell 
+population that displays a conserved expression programme in human BRCA1-deficient tumours, significantly correlates 
+with adverse clinical outcomes, and can be pharmacologically targeted in preclinical models. We reveal the spatial 
+distribution of residual EMT-like tumour cells within discrete anatomical niches, providing a framework for 
+understanding the persistence of MRD and potential therapeutic vulnerabilities. 
 
 <p align="center">
    <img src="misc/study_info.png">

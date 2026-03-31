@@ -29,7 +29,7 @@ def process_string(input_string):
 
 
 #%% Pseudobulk DGEA between proliferating and EMT spots selected based on a threshold
-adata = sc.read_h5ad(f'data/chrysalis/tumor_harmony_with_raw.h5ad')
+adata = sc.read_h5ad(f'data/tumor_harmony_with_raw.h5ad')
 
 # select spots with high tissue compartments scores
 threshold = 0.80
@@ -153,10 +153,10 @@ if show_plot:
 
 #%%
 # functional analysis
-results_df = pd.read_csv('figs/diffexp/emt_prolif/ '+ 'results.csv', index_col=0)
+np.random.seed(42)
+results_df = pd.read_csv('data/diffexp/emt_prolif/' + 'results.csv', index_col=0)
 
 mat = results_df[['stat']].T.rename(index={'stat': 'EMT'})
-
 # transcription factor
 tri = pd.read_csv('data/decoupler/tri_mouse_tfs.csv', index_col=0)
 tf_acts, tf_pvals = dc.run_ulm(mat=mat, net=tri)
@@ -169,7 +169,7 @@ fig.axes[0].set_axisbelow(True)
 fig.axes[0].set_title('Transcription factor activity')
 cbar = fig.axes[-1]
 cbar.set_frame_on(False)
-fig.savefig(f'figs/manuscript/fig3/prolif_emt_tf.svg')
+#fig.savefig(f'figs/manuscript/fig3/prolif_emt_tf.svg')
 plt.show()
 
 # tf scatters
@@ -218,7 +218,7 @@ for c in pathway_acts.columns:
     plt.close()
 
 # hallmarks
-gene_sets_df = pd.read_csv(f'msigdb_hallmark_mouse.csv', index_col=0)
+gene_sets_df = pd.read_csv(f'data/hallmark_mouse.csv', index_col=0)
 
 gene_sets_df['geneset'] = gene_sets_df['geneset'].apply(process_string)
 

@@ -678,7 +678,7 @@ def plot_heatmap(adata: AnnData, figsize: Tuple[int, int]=(5, 7), reorder_comps:
 def plot_matrix(adata: AnnData, figsize: Tuple[int, int] = (7, 5), num_genes=5, hexcodes: List[str] = None,
                 seed: int = None, scaling=True, reorder_comps=True, comps=None, flip=True,
                 colorbar_shrink: float = 0.5, colorbar_aspect: int = 20, cbar_label: str = None,
-                dendrogram_ratio=0.05, xlabel=None, ylabel=None, fontsize=10,
+                dendrogram_ratio=0.05, xlabel=None, ylabel=None, fontsize=10, return_df=False,
                 **kwrgs):
     # SVG weights for each compartment
     df = pd.DataFrame(data=adata.uns['chr_aa']['loadings'], columns=adata.uns['chr_pca']['features'])
@@ -763,6 +763,8 @@ def plot_matrix(adata: AnnData, figsize: Tuple[int, int] = (7, 5), num_genes=5, 
         colorbar.set_label(cbar_label)
 
     plt.tight_layout()
+    if return_df:
+        return plot_df
 
 
 def plot_weights(adata: AnnData, hexcodes: List[str]=None, seed: int=None, compartments: List[int]=None, ncols: int=4,

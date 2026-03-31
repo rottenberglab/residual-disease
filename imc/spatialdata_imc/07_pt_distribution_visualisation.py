@@ -7,7 +7,7 @@ import squidpy as sq
 from glob import glob
 import seaborn as sns
 from tqdm import tqdm
-import spatialdata_plot  # labelled as not used but don't remove
+# import spatialdata_plot  # labelled as not used but don't remove
 import spatialdata as sd
 import matplotlib.pyplot as plt
 from sklearn.mixture import GaussianMixture
@@ -36,8 +36,12 @@ def morans_correlogram(adata, ranges=[20, 60, 100, 140, 200]):
 
 #%%
 # Read data
-output_path = '/mnt/f/HyperIon/sdata/'
-metadata_path = "/mnt/c/Users/demeter_turos/PycharmProjects/persistance/data/meta_df_imc_filled.csv"
+# output_path = '/mnt/f/HyperIon/sdata/'
+# metadata_path = "/mnt/c/Users/demeter_turos/PycharmProjects/persistance/data/meta_df_imc_filled.csv"
+
+output_path = '/Volumes/DemExt4/HyperIon/sdata/'
+metadata_path = "data/meta_df_imc_filled.csv"
+
 metadata_df = pd.read_csv(metadata_path, index_col=0)
 
 imcs = glob(output_path + '*_imc.zarr')
@@ -347,6 +351,8 @@ g.set(xlabel="log1p(Pt count / μm$^2$)")
 plt.savefig(f'/mnt/c/Users/demeter_turos/PycharmProjects/persistance/figs/manuscript/fig5/plat_ridgeplot_v2.svg')
 plt.show()
 
+df.to_csv('data/fig_4d.csv')
+
 #%%
 # Cell type scatter with Pt classes
 folder = 'data/to_hpc/'
@@ -587,6 +593,7 @@ for s in samples:
                 rasterized=True, cbar_kws={'label': f"Enrichment score", "shrink": 0.75}, vmin=-100,
                 vmax=100)
     plt.title(title)
+    enrich_df.to_csv(f'data/cell_nh_enrichment_suppl_{title.replace(" ", "_").replace("/", "-")}.csv')
     plt.tight_layout()
     savename = s.split('/')[-1][:-10]
     plt.savefig(

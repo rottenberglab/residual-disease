@@ -61,9 +61,10 @@ adata.obs['condition_cat'] = [x + ' ' + y + ' ' + z for x, y, z in
                                   adata.obs['elapsed_time'])]
 adata.obs['condition_cat'] = adata.obs['condition_cat'].astype('category')
 
+max_label = 0
 cluster_conds = dict()
-for idx, s in enumerate(np.unique(adata.obs['condition_cat'])):
-    ad = adata[adata.obs['condition_cat'] == s].copy()
+for idx, s in enumerate(['primary_tumor', 'residual_tumor', 'relapsed_tumor']):
+    ad = adata[adata.obs['condition'] == s].copy()
     celltypes_df = ad.obsm['cell2loc']
     # celltypes_df.columns = [cell_type_dict[x] for x in celltypes_df.columns]
 
@@ -101,9 +102,12 @@ for idx, s in enumerate(np.unique(adata.obs['condition_cat'])):
     plt.show()
 
     cluster_labels = fcluster(z, threshold, criterion='distance')
-    corrs['cluster'] = cluster_labels
+    corrs['cluster'] = cluster_labels + max_label
     cell_cluster_dict = {k:v for k, v in zip(corrs.index, corrs['cluster'])}
-    cluster_conds[names[s]] = cell_cluster_dict
+    cluster_conds[s] = cell_cluster_dict
+    corrs.to_csv(f'data/fig3f_{s}.csv')
+    max_label += np.max(cluster_labels)
+
 cluster_conds = pd.DataFrame(cluster_conds)
 
 cluster_conds = cluster_conds[name_order]

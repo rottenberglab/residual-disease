@@ -35,7 +35,7 @@ color_map = {
 #%%
 # Main t-SNE plot
 adata = sc.read_h5ad('data/sc_dataset.h5ad')
-adata.obs['hires_map'] = [label_map[x] for x in adata.obs['hires']]
+adata.obs['hires_map'] = [label_map[x] for x in adata.obs['cell_type_hires']]
 
 plt.rcParams['svg.fonttype'] = 'none'
 plt.rcParams['font.family'] = 'DejaVu Sans'

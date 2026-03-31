@@ -57,8 +57,8 @@ imc_adata.obs[cell_types] = imc_adata.obsm['cell_type_params'][cell_types]
 
 # read the old ones
 output_folder = '/mnt/c/Users/demeter_turos/PycharmProjects/persistance/data/imc_samples'
-adata = sc.read_h5ad(f'{output_folder}/imc_samples_scanorama_4.h5ad')
-adata_depr = sc.read_h5ad(f'{output_folder}/imc_samples_harmony.h5ad')  # this contains relevant metadata
+adata = sc.read_h5ad(f'data/imc_samples_scanorama_4.h5ad')
+adata_depr = sc.read_h5ad(f'data/imc_samples_harmony.h5ad')  # this contains relevant metadata
 
 # add variables to adata
 adata_depr = adata_depr[adata_depr.obs.index.isin(adata.obs.index)]
@@ -96,6 +96,11 @@ title_dict = {'cisplatin_6mg/kg_4_hours': 'Cisplatin 6mg/kg 4hpt',
               'cisplatin_6mg/kg_24_hours': 'Cisplatin 6mg/kg 24hpt',
               'cisplatin_6mg/kg_12_days': 'Cisplatin 6mg/kg 12dpt',
               'no_treatment_na': 'Primary tumor',}
+
+ch_df = pd.DataFrame(data=adata.obsm['chr_aa'], index=adata.obs_names,
+                     columns=[f'C{x}' for x in range(adata.obsm['chr_aa'].shape[1])])
+
+adata.obsm['ch_df'] = ch_df
 
 #%%
 # calculate results for each sample
@@ -157,6 +162,7 @@ metrics_df['id'] = metrics_df.index
 
 li.pl.contributions(misty, return_fig=False, figure_size=(7, 7))
 plt.tight_layout()
+plt.show()
 plt.savefig('contributions.svg')
 
 li.pl.interactions(misty, view='Cell types', top_n=20)
@@ -223,6 +229,11 @@ plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
 plt.savefig(f'/mnt/c/Users/demeter_turos/PycharmProjects/persistance/figs/manuscript/fig5/misty_bar_main2.svg')
 plt.show()
+
+df = pd.DataFrame(val_array, index=mod_names,
+                  columns=["Cisplatin 4 hpt", "Cisplatin 1 dpt", "Cisplatin 12 dpt"]).reset_index()
+df = df.rename(columns={"index": "module"})
+df.to_csv('data/fig4j.csv')
 
 #%%
 # misty rank main
@@ -291,3 +302,5 @@ plt.subplots_adjust(bottom=0.45)
 plt.tight_layout()
 plt.savefig(f'/mnt/c/Users/demeter_turos/PycharmProjects/persistance/figs/manuscript/fig5/misty_features_main2.svg')
 plt.show()
+
+condition_df.to_csv('data/suppl_fig_misty_imprtances.csv')

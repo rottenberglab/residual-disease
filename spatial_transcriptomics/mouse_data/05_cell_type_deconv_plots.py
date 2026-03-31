@@ -4,6 +4,8 @@ import scanpy as sc
 import seaborn as sns
 import matplotlib.pyplot as plt
 from spatial_transcriptomics.functions import spatial_plot
+import re
+import pingouin as pg
 
 
 cell_type_dict = {
@@ -18,14 +20,14 @@ cell_type_dict = {
     'NKcell': 'NK cell',
     'Plasmacell': 'Plasma cell',
     'Spp1Macrophage': 'Macrophage SPP1+',
-    'TB-EMT': 'Tumor basal-EMT',
-    'TBasal1': 'Tumor basal',
-    'TBasal2': 'Tumor basal hypoxic',
-    'TFlike': 'Tumor fibroblast-like',
-    'TL-Alv': 'Tumor luminal-alveolar',
-    'TLA-EMT': 'Tumor luminal-alveolar-EMT',
-    'TMlike': 'Tumor macrophage-like',
-    'TProliferating': 'Tumor proliferating',
+    'TB-EMT': 'Tumour basal-EMT',
+    'TBasal1': 'Tumour basal',
+    'TBasal2': 'Tumour basal hypoxic',
+    'TFlike': 'Tumour fibroblast-like',
+    'TL-Alv': 'Tumour luminal-alveolar',
+    'TLA-EMT': 'Tumour luminal-alveolar-EMT',
+    'TMlike': 'Tumour macrophage-like',
+    'TProliferating': 'Tumour proliferating',
     'Tcell' : 'T cell',
     'Treg': 'T cell regulatory',
     'cDC': 'Dendritic cell',
@@ -33,7 +35,7 @@ cell_type_dict = {
 }
 
 celltype_dict = {
-    'Tumor': ['TB-EMT', 'TBasal1', 'TBasal2', 'TFlike', 'TL-Alv', 'TLA-EMT', 'TMlike', 'TProliferating'],
+    'Tumour': ['TB-EMT', 'TBasal1', 'TBasal2', 'TFlike', 'TL-Alv', 'TLA-EMT', 'TMlike', 'TProliferating'],
     'T cell': ['CD4T', 'CD8T', 'Tcell', 'Treg'],
     'NK cell': ['NKcell'],
     'Dendritic cell': ['cDC', 'pDC', 'APC'],
@@ -57,8 +59,13 @@ for k in list(adata.uns['spatial'].keys()):
     if k in list(sample_name_df.keys()):
         adata.uns['spatial'][sample_name_df[k]] = adata.uns['spatial'][k]
 
+
 label_cats = [sample_name_df[x] for x in adata.obs['sample_id'].cat.categories]
 adata.obs['label'] = adata.obs['label'].cat.reorder_categories(label_cats, ordered=True)
+label_cats = [
+    re.sub(r'(\d)dpt', r'\1 dpt', s.replace('tumor', 'tumour'))
+    for s in label_cats
+]
 
 #%%
 # All cell types with alpha blending
@@ -113,6 +120,18 @@ for c in celltypes_df.columns:
                  colorbar_aspect=5, colorbar_shrink=0.25, wspace=-0.4, subplot_size=4, alpha_blend=True,
                  x0=1, suptitle_fontsize=15, topspace=0.8, bottomspace=0.05, leftspace=0.1, rightspace=0.9)
     plt.savefig(f'figs/manuscript/fig1/ctprops_lowres_7/he.svg')
+    plt.show()
+
+# hires props for crop
+sc.set_figure_params(vector_friendly=True, dpi_save=150, fontsize=12)
+plt.rcParams['svg.fonttype'] = 'none'
+for c in celltypes_df.columns:
+
+    spatial_plot(adata, 5, 5, f'{c}_props', suptitle=cell_type_dict[c], alpha_img=1,
+                 colorbar_label='Cell density', cmap='magma', title=label_cats,
+                 colorbar_aspect=5, colorbar_shrink=0.25, wspace=-0.4, subplot_size=4, alpha_blend=False,
+                 x0=1, suptitle_fontsize=40, topspace=0.9, bottomspace=0.05, leftspace=0.05, rightspace=0.95)
+    plt.savefig(f'figures/cell_types/{c}_props.pdf')
     plt.show()
 
 #%%
@@ -317,8 +336,18 @@ for idx, ct in enumerate(celltype_dict.keys()):
     ax[idx].spines['right'].set_visible(False)
     ax[idx].set_xticklabels(ax[idx].get_xticklabels(), rotation=45)
 plt.tight_layout()
-plt.savefig(f'figs/manuscript/fig1/cell_props_bar2.svg')
+# plt.savefig(f'figs/manuscript/fig1/cell_props_bar2.svg')
 plt.show()
+
+# anova
+for c in list(celltype_dict.keys()):
+    anova_results = pg.anova(data=props_df, dv=c, between='condition', detailed=True)
+    print(f"\n--- One-way ANOVA for {c} ---")
+    print(anova_results)
+    tukey_results = pg.pairwise_tukey(data=props_df, dv=c, between='condition')
+    print(f"\n--- Tukey's HSD for {c} ---")
+    print(tukey_results)
+
 
 for idx, ct in enumerate(celltype_dict.keys()):
 
@@ -373,6 +402,18 @@ condition_map = {'primary_tumor': 'Primary',
                  'residual_tumor': 'Residual'}
 
 props_df['condition'] = props_df['condition'].map(lambda x: condition_map[x])
+props_df.to_csv('data/fig_1gh_supll.csv')
+
+# anova
+import pingouin as pg
+for c in list(celltype_dict.keys()):
+    anova_results = pg.anova(data=props_df, dv=c, between='condition', detailed=True)
+    print(f"\n--- One-way ANOVA for {c} ---")
+    print(anova_results)
+    tukey_results = pg.pairwise_tukey(data=props_df, dv=c, between='condition')
+    print(f"\n--- Tukey's HSD for {c} ---")
+    print(tukey_results)
+
 
 plt.rcParams['svg.fonttype'] = 'none'
 
@@ -392,3 +433,125 @@ for idx, ct in enumerate(celltype_dict.keys()):
 plt.tight_layout()
 plt.savefig(f'figs/manuscript/fig1/cell_props_bar_tumours.svg')
 plt.show()
+
+
+#%%
+# proportion plots
+
+from cmap import Colormap
+
+def proportion_plot(ctype_props, spot_number, palette='Paired', title='Compartment fractions', legend_col=5,
+                    figsize=(7, 6), legend=True):
+    fig, ax = plt.subplots(1, 2, figsize=figsize, dpi=100, gridspec_kw={'width_ratios': [7, 1.2]})
+    # plt.subplots_adjust(left=0.30)
+    # plot bars
+    left = len(ctype_props) * [0]
+    cmap = sns.color_palette(palette, ctype_props.shape[1])
+    for idx, name in enumerate(ctype_props.columns.tolist()):
+        ax[0].barh(ctype_props.index, ctype_props[name], left=left, edgecolor='#383838', linewidth=0,
+                   color=cmap[idx])
+        left = left + ctype_props[name]
+
+    ax[1].barh(spot_number.index, spot_number.values, left=left, edgecolor='#5c5c5c', linewidth=0,
+               color='#a1a1a1')
+
+    # title and subtitle
+    ax[0].title.set_text(title)
+    ax[1].title.set_text('Spots')
+    if legend:
+        ax[0].legend([a for a in ctype_props.columns], bbox_to_anchor=([0.3, 1.1, 0, 0]), ncol=legend_col,
+                     frameon=False, loc="center")
+    # remove spines
+    for i in range(2):
+        ax[i].spines['right'].set_visible(False)
+        ax[i].spines['left'].set_visible(False)
+        ax[i].spines['top'].set_visible(False)
+        ax[i].spines['bottom'].set_visible(True)
+
+    # format x ticks
+    xticks = np.arange(0, 1.1, 0.1)
+    xlabels = ['{:.1f}'.format(i) for i in np.arange(0, 1.1, 0.1)]
+    ax[0].set_xticks(xticks, xlabels)
+    ax[0].tick_params(axis='x', labelrotation=90)
+    ax[1].set_yticks([])
+    # ax[1].set_xticks(ax[1].get_xticks(), rotation=45, ha='right')
+    ax[1].tick_params(axis='x', labelrotation=90)
+
+    # adjust limits and draw grid lines
+    ax[0].set_xlim(0, 1.0)
+    ax[0].set_ylim(-0.5, ax[0].get_yticks()[-1] + 0.5)
+    ax[1].set_ylim(-0.5, ax[0].get_yticks()[-1] + 0.5)
+    fig.subplots_adjust(top=0.6, wspace=-0.5, hspace=0.1)
+    # ax[0].xaxis.grid(color='gray', linestyle='dashed')
+    # ax[0].yaxis.grid(color=None)
+    # ax[0].xaxis.grid(color=None)
+    ax[1].xaxis.grid(color='gray', linestyle='dashed')
+    ax[1].set_axisbelow(True)
+    ax[1].set_xticks([0, 1000, 2000, 3000, 4000])
+
+    fig.subplots_adjust(top=0.8)
+
+adata = sc.read_h5ad(f'data/chrysalis/tumor_harmony.h5ad')
+
+celltype_dict = {
+    'Tumor': ['TB-EMT', 'TBasal1', 'TBasal2', 'TFlike', 'TL-Alv', 'TLA-EMT', 'TMlike', 'TProliferating'],
+    'T cell': ['CD4T', 'CD8T', 'Tcell', 'Treg'],
+    'NK cell': ['NKcell'],
+    'Dendritic cell': ['cDC', 'pDC', 'APC'],
+    'Fibroblast': ['Fibroblast'],
+    'B cell': ['Bcell', 'Plasmacell'],
+    'Macrophage': ['CHMacrophage', 'Spp1Macrophage', 'InflMacrophage'],
+    'Endothelial cell': ['Endothelialcell'],
+}
+
+# lowres props
+props_df = pd.DataFrame()
+spot_nr = []
+
+for sample in np.unique(adata.obs['sample_id']):
+    ad = adata[adata.obs['sample_id'] == sample]
+    celltypes_df = ad.obsm['cell2loc']
+    ct_props = celltypes_df.values / celltypes_df.sum(axis=1).values.reshape(-1, 1)
+    ct_props = pd.DataFrame(data=ct_props, index=celltypes_df.index, columns=celltypes_df.columns)
+    sample_props = {}
+    for k, v in celltype_dict.items():
+        sample_props[k] = ct_props[v].sum(axis=1).sum()
+    sample_prop_df = pd.DataFrame(data=sample_props, index=[sample])
+    sample_prop_df = sample_prop_df.divide(sample_prop_df.sum(axis=1).sum())
+    metadata = ['sample_id', 'batch', 'slide', 'condition', 'treatment', 'elapsed_time', 'label']
+    sample_prop_df[metadata] = ad.obs.iloc[0, :][metadata]
+    sample_prop_df['short_id'] = sample_prop_df['label'][0].split(' | ')[-1]
+    props_df = pd.concat([props_df, sample_prop_df], axis=0)
+    spot_nr.append(len(ad))
+
+# define custom order
+custom_order = ['Primary tumor', 'TAC 7dpt', 'TAC 12dpt', 'TAC 30dpt',
+                'Cisplatin 7dpt', 'Cisplatin 12dpt', 'Cisplatin 30dpt']
+
+props_df.index = props_df['label']
+
+props_df['order'] = props_df.index.str.split('|').str[1].str.strip()
+props_df['sample'] = props_df.index
+props_df['order'] = props_df['order'].astype('category')
+props_df['order'] = props_df['order'].cat.reorder_categories(custom_order, ordered=True)
+props_df = props_df.sort_values(by=['order', 'sample'])
+props_df = props_df.drop(columns=['order', 'sample'])
+props_df.index = props_df.index.str.replace("tumor", "tumour")
+
+props_df = props_df.drop(columns=metadata + ['short_id'])
+spot_nr = pd.Series(data=spot_nr, index=props_df.index, name='spot_nr')
+spot_nr = pd.DataFrame(spot_nr)
+
+cmap = Colormap('colorcet:CET_C3')
+colors = [cmap(i) for i in np.linspace(0, 1, 10)]
+
+plt.rcParams['font.family'] = 'Arial'
+plt.rcParams['svg.fonttype'] = 'none'
+proportion_plot(props_df[::-1], spot_nr['spot_nr'][::-1], title='Cell type composition',
+                palette=colors)
+plt.tight_layout()
+plt.savefig(f'data/cell_type_proportions.svg', dpi=300)
+plt.show()
+
+props_df['Number of spots'] = spot_nr['spot_nr']
+props_df.to_csv('data/fig_1g.csv')

@@ -6,7 +6,7 @@ import seaborn as sns
 import chrysalis as ch
 import matplotlib.pyplot as plt
 from scipy.cluster.hierarchy import linkage, leaves_list
-from spatial_transcriptomics.functions import spatial_plot
+from spatial_transcriptomics.functions import spatial_plot, matrixplot
 
 
 #%%
@@ -195,6 +195,22 @@ adata.obs['condition_cat'] = [x + ' ' + y + ' ' + z for x, y, z in
 adata.obs['condition_cat'] = adata.obs['condition_cat'].astype('category')
 # palette 80, 60, 50 lightness
 
+hallmark_names = hm_mouse_df['hallmark_name'].tolist()
+adata.obs['condition_label'] = adata.obs['condition_cat'].map(names)
+mean_hallmarks = adata.obs.groupby('condition_label')[hallmark_names].mean()
+mean_hallmarks = mean_hallmarks.reindex(order)
+mean_hallmarks = mean_hallmarks.apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+mean_hallmarks.to_csv('data/fig3a_hallmarks_of_cancer.csv')
+
+matrixplot(mean_hallmarks.T, figsize=(8.2, 12), flip=False, scaling=False, square=True,
+            colorbar_shrink=0.45, colorbar_aspect=10, title=None,
+            dendrogram_ratio=0.1, cbar_label="Z-scaled\nscore", xlabel='Cancer hallmarks',
+            cmap=sns.diverging_palette(325, 145, l=60, s=80, center="dark", as_cmap=True),
+            ylabel=None, rasterized=True, seed=87, reorder_obs=False,
+            color_comps=False, adata=adata, xrot=90, ha='center')
+# plt.savefig(f'figs/manuscript/fig3/cell_cycle_sasp_am.svg')
+plt.show()
+
 rows = 4
 cols = 4
 
@@ -250,15 +266,18 @@ corr_m = pd.concat([compartment_df, adata.obs[columns]], axis=1).corr(method='pe
 corr_m = corr_m.drop(index=columns, columns=compartment_df.columns)
 corr_m = corr_m.rename(columns={'sasp': 'SASP'})
 corr_m.index = [str(x) for x in corr_m.index]
+corr_m.to_csv('data/fig3b_hallmarks_of_cancer.csv')
 
 z = linkage(corr_m, method='ward')
 order = leaves_list(z)
 corr_m = corr_m.iloc[order, :]
 hexcodes = [hexcodes[i] for i in order]
 
+
 z = linkage(corr_m.T, method='ward')
 order = leaves_list(z)
 corr_m = corr_m.iloc[:, order]
+
 
 plt.rcParams['svg.fonttype'] = 'none'
 
@@ -273,3 +292,4 @@ plt.title('Hallmarks of cancer')
 plt.tight_layout()
 plt.savefig(f'figs/manuscript/fig3/hallmark_corrs.svg')
 plt.show()
+

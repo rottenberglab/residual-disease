@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 import seaborn as sns
+import pingouin as pg
 import chrysalis as ch
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
@@ -18,12 +19,10 @@ adata = sc.read_h5ad(f'data/chrysalis/tumor_harmony.h5ad')
 comps = 13
 
 # subset anndata
-selected_samples = [ 17, 14, 15, 16, 19, 18, 8, 21]
-adata = adata[adata.obs['ch_sample_id'].isin(selected_samples)].copy()
-
 # reorder sample_id for plotting
 sample_order = ['20221010-3_9', '20221010-3_10', '20221010-3_11', '20221010-3_12',
-                '20221010-4_13', '20221010-4_14', '20221010-1_3', '20221010-4_16']
+                '20221010-2_5', '20221010-4_14', '20221010-1_3', '20221010-4_16']
+adata = adata[adata.obs['sample_id'].isin(sample_order)].copy()
 adata.obs['sample_id'] = adata.obs['sample_id'].cat.reorder_categories(sample_order, ordered=True)
 
 # add a dict quickly to replace titles
@@ -42,8 +41,34 @@ adata.obs['label'] = adata.obs['label'].cat.reorder_categories(label_cats, order
 plt.rcParams['svg.fonttype'] = 'none'
 plot_samples(adata, 2, 4, comps, sample_col='label', seed=87, spot_size=1.9, rasterized=True,
              hspace=0.5, wspace=-0.5)
-plt.savefig(f'figs/manuscript/fig2/chrysalis_8.svg')
+plt.savefig(f'figures/fig2c.svg', dpi=200)
 plt.show()
+
+samples = adata.obs['label'].unique()
+
+fig, axes = plt.subplots(1, 7, figsize=(5 * 7, 5 * 1))
+axes = axes.flatten()
+for ax, sid in zip(axes, samples):
+    ad = adata[adata.obs['label'] == sid].copy()
+    sc.pl.spatial(
+        ad,
+        color='Echdc2',
+        title=sid,
+        show=False,
+        library_id=sid,
+        ax=ax,
+        s=14,
+    )
+plt.tight_layout()
+plt.show()
+
+adata.obs['asd'] = [x.split("|")[-1] for x in adata.obs["label"]]
+sc.pl.boxplot(
+    adata,
+    keys="Echdc2",           # gene (or any obs/var key)
+    groupby="asd",    # the categorical variable
+    show=True
+)
 
 #%%
 # MIP compartments for all sample
@@ -71,11 +96,14 @@ plt.show()
 selected_comps = [0, 1, 2, 4, 5, 7, 8, 9, 10, 11, 12]
 sf = 0.845
 plt.rcParams['svg.fonttype'] = 'none'
-plot_matrix(adata, comps=selected_comps, figsize=(6*sf, 12*sf), flip=False, scaling=True, square=False,
-            colorbar_shrink=0.2, colorbar_aspect=10, dendrogram_ratio=0.05, cbar_label='Z-scored gene contribution',
-            xlabel='Tissue compartment', ylabel='Top contributing genes per compartment', rasterized=True, seed=87)
+source_df = plot_matrix(adata, comps=selected_comps, figsize=(6*sf, 12*sf), flip=False, scaling=True, square=False,
+                        colorbar_shrink=0.2, colorbar_aspect=10, dendrogram_ratio=0.05,
+                        cbar_label='Z-scored gene contribution', xlabel='Tissue compartment',
+                        ylabel='Top contributing genes per compartment', rasterized=True, seed=87, return_df=True)
 # plt.savefig(f'figs/manuscript/fig2/chr_matrixplot.svg')
 plt.show()
+
+source_df.T.to_csv('data/fig_2b.csv')
 
 #%%
 # 7 sample row per compartment
@@ -178,7 +206,7 @@ for idx, i in enumerate(np.unique(adata.obs['sample'])):
     labels.append(label)
 
 props_df = pd.DataFrame(data=prop_matrix,
-                           index=labels)
+                             index=labels)
 spot_nr = pd.Series(data=spot_nr, index=labels, name='spot_nr')
 
 # Define the custom order
@@ -200,6 +228,26 @@ spot_nr['order'] = spot_nr['order'].cat.reorder_categories(custom_order, ordered
 spot_nr = spot_nr.sort_values(by=['order', 'sample'])
 spot_nr = spot_nr.drop(columns=['order', 'sample'])
 
+# anova
+stats_df = props_df.copy()
+stats_df['condition'] = stats_df.index.str.split('|').str[1].str.strip()
+
+for c in list(stats_df.keys())[:-1]:
+    anova_results = pg.anova(data=stats_df, dv=c, between='condition', detailed=True)
+    print(f"\n--- One-way ANOVA for {c} ---")
+    print(anova_results)
+    tukey_results = pg.pairwise_tukey(data=stats_df, dv=c, between='condition')
+    print(f"\n--- Tukey's HSD for {c} ---")
+    print(tukey_results)
+
+for c in [10, 2, 5]:
+    anova_results = pg.anova(data=stats_df, dv=c, between='condition', detailed=True)
+    print(f"\n--- One-way ANOVA for {c} ---")
+    print(anova_results)
+    tukey_results = pg.pairwise_tukey(data=stats_df, dv=c, between='condition')
+    print(f"\n--- Tukey's HSD for {c} ---")
+    print(tukey_results)
+
 hexcodes = ch.utils.generate_random_colors(num_colors=13, min_distance=1 / 13 * 0.5, seed=87,
                                   saturation=0.65, lightness=0.60)
 cmap = sns.color_palette(hexcodes, 13)
@@ -208,6 +256,10 @@ proportion_plot(props_df[::-1], spot_nr['spot_nr'][::-1], palette=hexcodes)
 plt.tight_layout()
 plt.savefig(f'figs/manuscript/fig2/chr_compartment_props.svg')
 plt.show()
+
+props_df['Number of spots'] = spot_nr['spot_nr']
+props_df.to_csv('data/fig_2e_and_supp.csv')
+
 
 # barplots
 rows = 2
@@ -401,15 +453,16 @@ selected_comps = [0, 1, 2, 4, 5, 7, 8, 9, 10, 11, 12]
 sf = 0.845
 
 plt.rcParams['svg.fonttype'] = 'none'
-matrixplot(corrs, comps=selected_comps, figsize=(8.2*sf, 12*sf), flip=True, scaling=False, square=True,
-            colorbar_shrink=0.17, colorbar_aspect=10, title='Cell type contributions to tissue compartments',
-            dendrogram_ratio=0.05, cbar_label="Pearsons's r", xlabel='Cell types',
-            cmap=sns.diverging_palette(267, 20, l=55, center="dark", as_cmap=True),
-            ylabel='Tissue compartment', rasterized=True, seed=87, linewidths=0.0, xrot=45,
-            reorder_obs=True)
+source_df = matrixplot(corrs, comps=selected_comps, figsize=(8.2*sf, 12*sf), flip=True, scaling=False, square=True,
+                       colorbar_shrink=0.17, colorbar_aspect=10, title='Cell type contributions to tissue compartments',
+                       dendrogram_ratio=0.05, cbar_label="Pearsons's r", xlabel='Cell types',
+                       cmap=sns.diverging_palette(267, 20, l=55, center="dark", as_cmap=True),
+                       ylabel='Tissue compartment', rasterized=True, seed=87, linewidths=0.0, xrot=45,
+                       reorder_obs=True)
 plt.savefig(f'figs/manuscript/fig2/chr_comp_cell_type_heatmap_v2.svg')
 plt.show()
 
+corrs.to_csv('data/fig_2f.csv')
 
 #%%
 # cell type correlation per condition
@@ -485,11 +538,11 @@ comp_corr = pd.DataFrame(comp_dict)
 
 plt.rcParams['svg.fonttype'] = 'none'
 matrixplot(comp_corr, figsize=(8.2*sf, 12*sf), flip=True, scaling=False, square=True,
-            colorbar_shrink=0.17, colorbar_aspect=10, title='Cell type correlation',
-            dendrogram_ratio=0.05, cbar_label="Pearsons's r", xlabel='Cell types',
-            cmap=sns.diverging_palette(267, 20, l=55, center="dark", as_cmap=True),
-            ylabel='Tissue compartment', rasterized=True, seed=87, reorder_obs=False,
-            color_comps=False)
+           colorbar_shrink=0.17, colorbar_aspect=10, title='Cell type correlation',
+           dendrogram_ratio=0.05, cbar_label="Pearsons's r", xlabel='Cell types',
+           cmap=sns.diverging_palette(267, 20, l=55, center="dark", as_cmap=True),
+           ylabel='Tissue compartment', rasterized=True, seed=87, reorder_obs=False,
+           color_comps=False)
 # plt.savefig(f'figs/manuscript/fig2/chr_comp_cell_type_heatmap_v2.svg')
 plt.show()
 

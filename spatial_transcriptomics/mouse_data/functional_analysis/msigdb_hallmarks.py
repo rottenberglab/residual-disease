@@ -11,9 +11,9 @@ from spatial_transcriptomics.functions import rank_sources_groups, matrixplot, s
 
 
 adata = sc.read_h5ad(f'data/chrysalis/tumor_harmony.h5ad')
-meta_df = pd.read_csv('mouse_metadata.csv', index_col=0)
+meta_df = pd.read_csv('data/meta_df_filled.csv', index_col=0)
 
-gene_sets_df = pd.read_csv('msigdb_hallmark_mouse.csv', index_col=0)
+gene_sets_df = pd.read_csv('data/hallmark_mouse.csv', index_col=0)
 dc.run_ora(mat=adata, net=gene_sets_df, source='geneset', target='genesymbol', verbose=True, use_raw=False)
 acts = dc.get_acts(adata, obsm_key='ora_estimate')
 acts_df = acts.to_df()
@@ -61,6 +61,8 @@ pathways_df = pathways_df.iloc[:, leaves_list(z)[::-1]]
 
 z_score_df = pathways_df.apply(stats.zscore)
 
+z_score_df.to_csv('data/fig3a_hallmark.csv')
+
 plt.rcParams['svg.fonttype'] = 'none'
 sf = 0.6
 matrixplot(z_score_df.T, figsize=(12*sf, 12*sf), flip=False, scaling=False, square=True,
@@ -69,7 +71,7 @@ matrixplot(z_score_df.T, figsize=(12*sf, 12*sf), flip=False, scaling=False, squa
             cmap=sns.diverging_palette(325, 145, l=60, s=80, center="dark", as_cmap=True),
             ylabel=None, rasterized=True, seed=87, reorder_obs=False,
             color_comps=False, adata=adata, xrot=90, ha='center')
-plt.savefig(f'figs/manuscript/fig3/hallmarks_v2.svg')
+# plt.savefig(f'figs/manuscript/fig3/hallmarks_v2.svg')
 plt.show()
 
 #%%

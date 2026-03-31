@@ -12,7 +12,7 @@ from spatial_transcriptomics.functions import matrixplot
 
 
 adata = sc.read_h5ad(f'data/chrysalis/tumor_harmony.h5ad')
-meta_df = pd.read_csv('mouse_metadata.csv', index_col=0)
+meta_df = pd.read_csv('data/meta_df_filled.csv', index_col=0)
 gene_sets_df = pd.read_csv(f'data/decoupler/go_mouse.csv', index_col=0)
 
 def tukey_fences(data):
@@ -126,7 +126,7 @@ for c in compartment_signatures.columns:
 scores[pvals > 0.05] = -0.0
 
 scores_matrix = scores.copy()
-# scores_matrix = scores_matrix.T
+scores_matrix = scores_matrix.T
 scores_matrix.columns = [int(x) for x in scores_matrix.columns]
 scores_matrix = scores_matrix.T
 
@@ -148,7 +148,9 @@ plot_df = plot_df.T.drop_duplicates().T
 plot_df.columns = [x.split(' ', 1)[0].upper() + (' ' + x.split(' ', 1)[1].lower() if len(x.split()) > 1 else '')
             for x in plot_df.columns]
 plot_df.columns = ['\n'.join(' '.join(label.split()[i:i + 3]) for i in range(0, len(label.split()), 3))
-            for label in plot_df.columns[::-1]]
+            for label in plot_df.columns]
+
+plot_df.T.to_csv('data/fig3d_go.csv')
 
 sf = 0.45
 plt.rcParams['svg.fonttype'] = 'none'

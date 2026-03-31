@@ -260,8 +260,8 @@ adata = sc.read_h5ad('data/infercnv.h5ad')
 adata_sub = adata[adata.obs['ancestral_tumor']!='na'].copy()
 adata_sub.obs['condition'] = [condition[x] for x in adata_sub.obs['condition']]
 adata_sub.obs['condition'] = adata_sub.obs['condition'].astype('category')
-adata_sub.obs['condition'] = adata_sub.obs['condition'].cat.reorder_categories()
 cond_order = ['Primary tumor', 'Residual tumor', 'Relapsed tumor']
+adata_sub.obs['condition'] = adata_sub.obs['condition'].cat.reorder_categories(cond_order)
 
 plt.rcParams['svg.fonttype'] = 'none'
 chromosome_heatmap_summary(adata_sub, groupby="ancestral_tumor", dendrogram=False,
@@ -275,6 +275,14 @@ chromosome_heatmap_summary(adata_sub, groupby="condition", dendrogram=False,
                                cmap='twilight', show=False, figsize=(6, 1.25), groups=cond_order)
 # plt.savefig(f'figs/manuscript/fig3/cnv_heatmap_conditions_v2.svg')
 plt.show()
+
+plt.rcParams['svg.fonttype'] = 'none'
+adata_sub.obs['treatment'] = ['cisplatin' if 'cisplatin' in x else x for x in adata_sub.obs['treatment']]
+chromosome_heatmap_summary(adata_sub, groupby="treatment", dendrogram=False,
+                               cmap='twilight', show=False, figsize=(6, 1.25))
+plt.savefig(f'figures/cnv_heatmap_drugs.svg')
+plt.show()
+
 
 # plot clusters for main
 plt.rcParams['svg.fonttype'] = 'none'

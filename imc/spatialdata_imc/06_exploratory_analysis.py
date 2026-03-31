@@ -5,7 +5,7 @@ import pandas as pd
 import squidpy as sq
 from glob import glob
 import seaborn as sns
-import spatialdata_plot  # labelled as not used but don't remove
+# import spatialdata_plot  # labelled as not used but don't remove
 import spatialdata as sd
 from shapely import Point
 from shapely import affinity
@@ -25,8 +25,12 @@ warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 
 #%%
 # Cell type composition
-output_path = '/mnt/f/HyperIon/sdata/'
-metadata_path = "/mnt/c/Users/demeter_turos/PycharmProjects/persistance/data/meta_df_imc_filled.csv"
+# output_path = '/mnt/f/HyperIon/sdata/'
+# metadata_path = "/mnt/c/Users/demeter_turos/PycharmProjects/persistance/data/meta_df_imc_filled.csv"
+
+output_path = '/Volumes/DemExt4/HyperIon/sdata/'
+metadata_path = "data/meta_df_imc_filled.csv"
+
 metadata_df = pd.read_csv(metadata_path, index_col=0)
 
 imcs = glob(output_path + '*_imc.zarr')
@@ -85,7 +89,7 @@ plt.show()
 
 #%%
 # Cell type marker heatmap from pixie
-pixie_df = pd.read_csv('data/pixie/cell_meta_cluster_channel_avg.csv', index_col=0)
+pixie_df = pd.read_csv('data/cell_meta_cluster_channel_avg.csv', index_col=0)
 pixie_df.index = pixie_df['cell_meta_cluster_rename']
 pixie_df = pixie_df.drop(columns=['cell_meta_cluster_rename'])
 
@@ -108,6 +112,8 @@ pixie_df = pixie_df.rename(index={'Fibrobl / lymphoc': 'Fibroblast/Lymphocyte'},
                                     'collagen-type1': 'Type I collagen',
                                     'F4_80': 'F4/80',
                                     'Ly6-G': 'Ly6G',})
+
+pixie_df.to_csv('data/fig_4b.csv')
 
 plt.rcParams['svg.fonttype'] = 'none'
 fig, ax = plt.subplots(1, 1, figsize=(6*0.8, 5.2*0.8))
@@ -365,8 +371,8 @@ for imcp in imcs:
 # Intracellular platinum content
 # measure pt intensity per sample and condition
 
-output_path = '/mnt/f/HyperIon/sdata/'
-metadata_path = "/mnt/c/Users/demeter_turos/PycharmProjects/persistance/data/meta_df_imc_filled.csv"
+output_path = '/Volumes/DemExt4/HyperIon/sdata/'
+metadata_path = "data/meta_df_imc_filled.csv"
 metadata_df = pd.read_csv(metadata_path, index_col=0)
 
 imcs = glob(output_path + '*_imc.zarr')
@@ -378,6 +384,7 @@ for imcp in imcs:
     print(f'Starting {imcp}')
 
     sdata_imc = sd.read_zarr(imcp)
+    print(len(sdata_imc.shapes))
     sdata_name = imcp.split('/')[-1].split('.zarr')[0]
 
     sdata_imc.table.obs['cell_type'] = ['Fibroblast/Lymphocyte' if
@@ -437,6 +444,8 @@ for idx, c in enumerate(cols):
 plt.tight_layout()
 plt.savefig(f'/mnt/c/Users/demeter_turos/PycharmProjects/persistance/figs/manuscript/fig5/plat_isotopes_box2.svg')
 plt.show()
+
+platinum_df.to_csv('data/fig_suppl_pt_isotopes.csv')
 
 # platinum isotopes boxplot
 plt.rcParams['svg.fonttype'] = 'none'
@@ -502,6 +511,8 @@ plt.tight_layout()
 plt.savefig(f'/mnt/c/Users/demeter_turos/PycharmProjects/persistance/figs/manuscript/fig5/cell_types_plat_hm2.svg')
 plt.show()
 
+cell_type_condition_df.to_csv('data/fig_4g.csv')
+
 # cell types barplot
 plt.rcParams['svg.fonttype'] = 'none'
 condition_df = platinum_df[platinum_df['type'] == 'Cisplatin 6mg/kg 4hpt'].copy()
@@ -521,6 +532,8 @@ ax.spines['right'].set_visible(False)
 plt.tight_layout()
 plt.savefig(f'/mnt/c/Users/demeter_turos/PycharmProjects/persistance/figs/manuscript/fig5/plat_cell_type_box.svg')
 plt.show()
+
+condition_df.to_csv('data/fig_4_suppl_celltype_boxplots.csv')
 
 #%%
 # Tumor cells with Ki67
@@ -590,6 +603,9 @@ ax.spines['right'].set_visible(False)
 plt.tight_layout()
 plt.savefig(f'/mnt/c/Users/demeter_turos/PycharmProjects/persistance/figs/manuscript/fig5/tumor_plat_box.svg', dpi=300)
 plt.show()
+
+tumor_cell_df[['type', 'cp_pt_norm', 'Ki-67 status']].to_csv('data/fig_4f.csv')
+
 
 selected_samples = {'20230607-2_5': 'Primary tumor',
                     '20230607-2_6': 'Cisplatin 6mg/kg 4hpt',
@@ -693,6 +709,7 @@ plt.show()
 #%%
 # Neighborhood graph - save spatial positions to table.obsm
 
+
 def transform_coord_pair(affine, df, x_col, y_col):
     # [a, b, d, e, xoff, yoff]
     affine_vec = [affine[1, 1], affine[1, 2],
@@ -704,6 +721,7 @@ def transform_coord_pair(affine, df, x_col, y_col):
     df[x_col] = x_vals
     df[y_col] = y_vals
     return df
+
 
 to_overwrite = False
 

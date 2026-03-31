@@ -7,7 +7,7 @@ from spatial_transcriptomics.functions import plot_volcano_df
 
 
 #%% Pseudobulk DGEA between primary and residual tumour spots
-adata = sc.read_h5ad(f'data/chrysalis/tumor_harmony_with_raw.h5ad')
+adata = sc.read_h5ad(f'data/tumor_harmony_with_raw.h5ad')
 
 # get raw file
 adata.layers['counts'] = adata.raw.X
@@ -52,7 +52,7 @@ scale = 0.85
 plt.rcParams['svg.fonttype'] = 'none'
 fig, ax = plt.subplots(1, 1, figsize=(3*scale, 3.2*scale))
 plot_volcano_df(results_df, x='log2FoldChange', y='padj', top=10, ax=ax,
-                   color_neg='#3573a1', color_pos='#50c6ad', s=4, sign_limit=None)
+                color_neg='#3573a1', color_pos='#50c6ad', s=4, sign_limit=None)
 scatter = ax.collections[0]
 scatter.set_rasterized(True)
 ax.spines['top'].set_visible(False)
